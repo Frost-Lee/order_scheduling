@@ -25,11 +25,12 @@ class TestFulfillmentOrigin(unittest.TestCase):
         sut.consume_supply(5)
         self.assertEqual(sut.cached_supply_quantity, 5)
 
-    def test_average_daily_supply(self):
+    def test_average_daily_supply_quantity(self):
         sut = FulfillmentOrigin('site', 'product')
-        self.assertEqual(sut.average_daily_supply(datetime.datetime.today()), 0)
-        quantity, date = 10, datetime.datetime.today()
+        self.assertAlmostEqual(sut.average_daily_supply_quantity(datetime.datetime.today()), 1e-5)
+        quantity, date, day_shift = 10, datetime.datetime.today(), 2
+        sut.add_supply(0, date)
+        self.assertAlmostEqual(sut.average_daily_supply_quantity(date), 1e-5)
         sut.add_supply(quantity, date)
-        self.assertEqual(sut.average_daily_supply(date), quantity)
-        day_shift = 2
-        self.assertEqual(sut.average_daily_supply(date + datetime.timedelta(days=day_shift)), quantity / day_shift)
+        self.assertAlmostEqual(sut.average_daily_supply_quantity(date), quantity)
+        self.assertAlmostEqual(sut.average_daily_supply_quantity(date + datetime.timedelta(days=day_shift)), quantity / day_shift)

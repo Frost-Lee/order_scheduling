@@ -9,7 +9,7 @@ class TestOrderQueueManager(unittest.TestCase):
     def test_constructor(self):
         self.assertIsNotNone(OrderQueueManager())
 
-    def test_add_origins(self):
+    def test_add_origin(self):
         sut = self._default_sut()
         self.assertEqual(len(sut.origin_queue_lookup), 3)
         origin_ids = set([*sut.origin_queue_lookup.keys()])
@@ -35,9 +35,9 @@ class TestOrderQueueManager(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'please add the daily orders in an ascending manner'):
             sut.enqueue_daily_order(orders_3)
         sut = self._sut_with_orders()
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_a'))], ['order_a', 'order_c'])
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_b'))], ['order_b', 'order_a', 'order_c'])
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_c'))], ['order_b', 'order_c'])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_a'))], ['order_a', 'order_c'])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_b'))], ['order_b', 'order_a', 'order_c'])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_c'))], ['order_b', 'order_c'])
 
     def test_claim_fulfillment(self):
         sut = self._sut_with_orders()
@@ -50,18 +50,41 @@ class TestOrderQueueManager(unittest.TestCase):
         sut.claim_fulfillment('origin_a', 'order_a', 5)
         self.assertEqual(sut.queued_orders['order_a'].quantity, 5)
         sut.claim_fulfillment('origin_b', 'order_a', 5)
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_a'))], ['order_c'])
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_b'))], ['order_b', 'order_c'])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_a'))], ['order_c'])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_b'))], ['order_b', 'order_c'])
         sut.claim_fulfillment('origin_c', 'order_c', 20)
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_a'))], [])
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_a'))], [])
 
-    def test_orders_in_origin_queue(self):
+    def test_peek_order_queue_content(self):
         sut = self._sut_with_orders()
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_a'))], ['order_a', 'order_c'])
         with self.assertRaisesRegex(AssertionError, 'origin does not exist'):
-            sut.orders_in_origin_queue('origina')
+            sut.peek_order_queue_content('origin_d', 1, 1)
+        self.assertEqual([*map(lambda x: x.order_id, sut.peek_order_queue_content('origin_b', 10, 1))], ['order_b', 'order_a'])
+        self.assertEqual([*map(lambda x: x.order_id, sut.peek_order_queue_content('origin_b', 2, 2))], ['order_b', 'order_a'])
+        self.assertEqual([*map(lambda x: x.order_id, sut.peek_order_queue_content('origin_b', 100, 10))], ['order_b', 'order_a', 'order_c'])
         sut = self._default_sut()
-        self.assertListEqual([*map(lambda x: x.order_id, sut.orders_in_origin_queue('origin_a'))], [])
+        self.assertListEqual(sut.peek_order_queue_content('origin_a', 1, 1), [])
+
+    def test_order_queue_content(self):
+        sut = self._sut_with_orders()
+        with self.assertRaisesRegex(AssertionError, 'origin does not exist'):
+            sut.order_queue_content('origina')
+        self.assertListEqual([*map(lambda x: x.order_id, sut.order_queue_content('origin_a'))], ['order_a', 'order_c'])
+        sut = self._default_sut()
+        self.assertListEqual(sut.order_queue_content('origin_a'), [])
+
+    def test_get_origin_average_due_quantity(self):
+        sut = self._default_sut()
+        self.assertEqual(sut.get_origin_average_due_quantity('origin_a'), 0)
+        sut = self._sut_with_orders()
+        self.assertAlmostEqual(sut.get_origin_average_due_quantity('origin_b'), 5 / 2 + 10 / 2 + 20 / 3)
+        sut.claim_fulfillment('origin_c', 'order_b', 5)
+        self.assertAlmostEqual(sut.get_origin_average_due_quantity('origin_b'), 10 / 2 + 20 / 3)
+        sut.claim_fulfillment('origin_a', 'order_a', 5)
+        self.assertAlmostEqual(sut.get_origin_average_due_quantity('origin_b'), 5 / 2 + 20 / 3)
+        sut.claim_fulfillment('origin_b', 'order_a', 5)
+        sut.claim_fulfillment('origin_b', 'order_c', 20)
+        self.assertAlmostEqual(sut.get_origin_average_due_quantity('origin_b'), 0)
 
     def test__euqueue_order(self):
         sut = self._default_sut()
@@ -87,7 +110,10 @@ class TestOrderQueueManager(unittest.TestCase):
 
     def _default_sut(self):
         sut = OrderQueueManager()
-        sut.add_origins(['origin_a', 'origin_b', 'origin_c'])
+        sut.add_origin('origin_a')
+        sut.add_origin('origin_b')
+        sut.add_origin('origin_c')
+        sut.add_origin('origin_c')
         return sut
 
     def _sut_with_orders(self):

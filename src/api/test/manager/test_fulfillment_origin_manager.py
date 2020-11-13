@@ -15,15 +15,18 @@ class TestFulfillmentOriginManager(unittest.TestCase):
         sut.add_origin('site_1', 'product_1', 'id_1')
         self.assertEqual(sut.origin_lookup['id_1'].site_name, 'site_1')
         self.assertEqual(sut.site_product_lookup['site_1']['product_1'], 'id_1')
-        sut.add_origin('site_1', 'product_1')
+        sut.add_origin('site_1', 'product_1', 'id_2')
         self.assertEqual(len(sut.origin_lookup), 1)
         self.assertEqual(len(sut.site_product_lookup), 1)
+        self.assertEqual(sut.get_origin_id('site_1', 'product_1'), 'id_1')
         sut.add_origin('site_1', 'product_2', 'id_2')
         self.assertEqual(sut.origin_lookup['id_2'].site_name, 'site_1')
         self.assertEqual(sut.site_product_lookup['site_1']['product_2'], 'id_2')
         sut.add_origin('site_2', 'product_1', 'id_3')
         self.assertEqual(sut.origin_lookup['id_3'].product_name, 'product_1')
         self.assertEqual(sut.site_product_lookup['site_2']['product_1'], 'id_3')
+        sut.add_origin('site_3', 'product_1')
+        self.assertEqual(sut.origin_lookup[sut.get_origin_id('site_3', 'product_1')].site_name, 'site_3')
 
     def test_get_origin_id(self):
         sut = FulfillmentOriginManager()
@@ -31,6 +34,31 @@ class TestFulfillmentOriginManager(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, 'unknown origin'):
             sut.get_origin_id('site_2', 'product_1')
         self.assertEqual(sut.get_origin_id('site_1', 'product_1'), 'id_1')
+        sut.add_origin('site_2', 'product_2')
+        self.assertIn(sut.get_origin_id('site_2', 'product_2'), sut.origin_lookup)
+        self.assertIsNotNone(sut.get_origin_id('site_2', 'product_2'))
+
+    def test_get_origin(self):
+        sut = FulfillmentOriginManager()
+        sut.add_origin('site_1', 'product_1', 'id_1')
+        with self.assertRaisesRegex(AssertionError, 'unknown origin'):
+            sut.get_origin('id_2')
+        self.assertEqual(sut.get_origin('id_1').site_name, 'site_1')
+
+    def test_get_available_origin_id(self):
+        sut = FulfillmentOriginManager()
+        sut.add_origin('site_1', 'product_1', 'id_1')
+        sut.add_origin('site_2', 'product_1', 'id_2')
+        sut.add_supply('site_2', 'product_1', 100, datetime.datetime.today())
+        self.assertEqual(set(sut.get_available_origin_ids()), set(['id_2']))
+
+    def test_get_origin_cache_quantity(self):
+        sut = FulfillmentOriginManager()
+        sut.add_origin('site_1', 'product_1', 'id_1')
+        with self.assertRaisesRegex(AssertionError, 'unknown origin'):
+            sut.get_origin_cache_quantity('id_2')
+        sut.add_supply('site_1', 'product_1', 10, datetime.datetime(2020, 1, 1))
+        self.assertEqual(sut.get_origin_cache_quantity('id_1'), 10)
 
     def test_add_supply(self):
         sut = FulfillmentOriginManager()

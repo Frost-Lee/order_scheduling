@@ -19,8 +19,9 @@ class FulfillmentOrigin(object):
         assert quantity <= self.cached_supply_quantity, 'supply consumption quantity greater than cache'
         self.cached_supply_quantity -= quantity
 
-    def average_daily_supply(self, today):
+    def average_daily_supply_quantity(self, today):
+        epsilon = 1e-5      # the return value could be the divider
         if len(self.history_supply_dates) == 0:
-            return 0
+            return epsilon
         day_count = (today - self.history_supply_dates[0]).days
-        return sum(self.history_supply_quantities) if day_count == 0 else sum(self.history_supply_quantities) / day_count
+        return max(sum(self.history_supply_quantities) if day_count == 0 else sum(self.history_supply_quantities) / day_count, epsilon)

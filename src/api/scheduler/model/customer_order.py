@@ -9,3 +9,8 @@ class CustomerOrder(object):
         self.order_date = order_date
         self.fulfillment_origin_ids = set()
         self.order_id = order_id if order_id is not None else shortuuid.uuid()
+
+    def origin_average_quantity(self):
+        if len(self.fulfillment_origin_ids) == 0:
+            return self.quantity
+        return self.quantity / len(self.fulfillment_origin_ids)
