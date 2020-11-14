@@ -55,6 +55,7 @@ class OrderScheduler(object):
                     queue_top_orders[index].product_name,
                     queue_top_orders[index].order_date,
                     self.fulfillment_origin_manager.get_origin(origin_id).site_name,
+                    date,
                     supply_quantity_distribution[index]
                 ))
         return [*filter(lambda x: x[-1] > 0, fulfillment_plans)]

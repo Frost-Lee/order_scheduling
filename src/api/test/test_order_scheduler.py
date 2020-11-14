@@ -1,5 +1,4 @@
 import datetime
-from datetime import date
 from scheduler.manager.order_queue_manager import OrderQueueManager
 from scheduler.manager.fulfillment_origin_manager import FulfillmentOriginManager
 import unittest
@@ -46,6 +45,8 @@ class TestOrderScheduler(unittest.TestCase):
         self.assertEqual(sut.order_pool[date], [('customer_1', 'product_1', date, 100)] * 2)
 
     def test_plan_fulfillment(self):
+        sut = OrderScheduler()
+        self.assertEqual(len(sut.plan_fulfillment(datetime.datetime(2020, 1, 1))), 0)
         sut = self._default_sut()
         fulfill_date = datetime.datetime(2020, 1, 2)
         sut.claim_supply_plan('site_1', 'product_1', 10, fulfill_date)
@@ -61,9 +62,9 @@ class TestOrderScheduler(unittest.TestCase):
         sut.claim_supply_plan('site_1', 'product_1', 20, fulfill_date)
         sut.claim_supply_plan('site_3', 'product_1', 10, fulfill_date)
         plans = sut.plan_fulfillment(fulfill_date)
-        self.assertIn(('customer_3', 'product_1', datetime.datetime(2020, 1, 2), 'site_1', 20), plans)
-        self.assertIn(('customer_2', 'product_1', datetime.datetime(2020, 1, 1), 'site_3', 5), plans)
-        self.assertNotIn(('customer_3', 'product_1', datetime.datetime(2020, 1, 2), 'site_3', 20), plans)
+        self.assertIn(('customer_3', 'product_1', datetime.datetime(2020, 1, 2), 'site_1', fulfill_date, 20), plans)
+        self.assertIn(('customer_2', 'product_1', datetime.datetime(2020, 1, 1), 'site_3', fulfill_date, 5), plans)
+        self.assertNotIn(('customer_3', 'product_1', datetime.datetime(2020, 1, 2), 'site_3', fulfill_date, 20), plans)
 
     def test__distribute_supply(self):
         sut = OrderScheduler()
