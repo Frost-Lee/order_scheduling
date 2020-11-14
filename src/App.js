@@ -1,8 +1,8 @@
 import React from 'react';
 
-import axios from 'axios'
 import Button from '@material-ui/core/Button';
 import CheckCircleIcon from '@material-ui/icons/CheckCircle';
+import { DataGrid } from '@material-ui/data-grid';
 import Grid from '@material-ui/core/Grid';
 import HelpIcon from '@material-ui/icons/Help';
 import Paper from '@material-ui/core/Paper';
@@ -23,8 +23,18 @@ class OrderSchedulerUI extends React.Component {
     this.state = {
       supply_plans: null,
       sourcing_rules: null,
-      orders: null
+      orders: null,
+      fulfillment_plans: []
     }
+    this.tableColumns = [
+      {field: "id", headerName: "Index"},
+      {field: "customer", headerName: "Customer"},
+      {field: "product", headerName: "Product"},
+      {field: "order_date", headerName: "Order Date"},
+      {field: "site", headerName: "Site"},
+      {field: "Fulfillment Date", headerName: "Fulfillment Date"},
+      {field: "quantity", headerName: "Quantity"}
+    ]
   }
 
   handleFileChange = (identifier, selected_file) => {
@@ -49,13 +59,13 @@ class OrderSchedulerUI extends React.Component {
     fetch('/batchfulfillmentplan', {
       method: 'POST',
       body: form_data
-    }).then(res => {
-      console.log(res.json())
-    });
-    // console.log("submit button clicked");
-    // axios.post("http://localhost:5000/batchfulfillmentplan", form_data).then(res => {
-    //   console.log(res);
-    // });
+    }).then(res => {res.json().then(data => {
+      const plans = data.fulfillment_plans.map((value, index, array) => {
+        array[index].id = index + 1
+        return array[index]
+      });
+      this.setState({fulfillment_plans: plans})
+    })});
   };
 
   render() {
@@ -103,6 +113,13 @@ class OrderSchedulerUI extends React.Component {
           >
             Submit
           </Button>
+        </div>
+        <div style={{ height: 400, width: '100%' }}>
+          <DataGrid
+            rows={this.state.fulfillment_plans}
+            columns={this.tableColumns}
+            pageSize={Math.min(10, this.state.fulfillment_plans.length)}
+          />
         </div>
         <Button>Download as CSV</Button>
       </div>
