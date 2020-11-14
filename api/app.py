@@ -2,6 +2,7 @@ import flask
 import json
 import numpy as np
 import pandas as pd
+import time
 
 from scheduler.order_scheduler import OrderScheduler
 
@@ -9,6 +10,7 @@ app = flask.Flask(__name__)
 
 @app.route('/batchfulfillmentplan', methods=['GET', 'POST'])
 def get_batch_fulfillment_plan():
+    time.sleep(1)
     files = flask.request.files
     if 'orders' not in files or 'sourcing_rules' not in files or 'supply_plans' not in files:
         flask.abort(400, 'Unexpected file attachments.')
