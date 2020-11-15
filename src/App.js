@@ -76,7 +76,38 @@ class OrderSchedulerUI extends React.Component {
   };
 
   handleDownloadCSVButtonClicked = (event) => {
-    const csv_titles = '';
+    const fulfillment_dates = this.state.fulfillment_plans.map((value) => {return new Date(value.fulfillment_date)});
+    fulfillment_dates.sort((a, b) => a - b);
+    const start_date = fulfillment_dates[0];
+    const end_date = fulfillment_dates.slice(-1)[0];
+    const row_dict = {};
+    for (const plan of this.state.fulfillment_plans) {
+      const key = [plan.site, plan.customer, plan.product].join(',');
+      if (key in row_dict) {
+        row_dict[key].push(plan);
+      } else {
+        row_dict[key] = [plan];
+      }
+    }
+    const column_dates = [];
+    for (var date = start_date; date <= end_date; date.setDate(date.getDate() + 1)) {
+      column_dates.push(new Date(date));
+    }
+    console.log(column_dates);
+    const csv_content_rows = [];
+    for (const row_key of Object.keys(row_dict)) {
+      console.log(row_key);
+      const plans = row_dict[row_key];
+      console.log(plans);
+      const fulfillment_quantities = [];
+      for (const d of column_dates) {
+        const sum_reducer = (accumulated, current ) => accumulated + current;
+        fulfillment_quantities.push(plans.filter(plan => (new Date(plan.fulfillment_date)).getTime() === d.getTime()).map(plan => plan.quantity).reduce(sum_reducer, 0));
+      }
+      csv_content_rows.push(row_key + "," + fulfillment_quantities.join(","));
+    }
+    const csv_title_row = ["site,customer,product", column_dates.map(date => format_date(date)).join(",")].join(",");
+    download("fulfillment_plan.csv", [csv_title_row, csv_content_rows.join("\n")].join("\n"));
   };
 
   render() {
@@ -165,9 +196,6 @@ class OrderSchedulerUI extends React.Component {
 
 
 class FileUploadPanel extends React.Component {
-  constructor(props) {
-    super(props);
-  }
 
   fileSelectedHandler = event => {
     this.props.onChange(this.props.identifier, event.target.files[0]);
@@ -224,6 +252,14 @@ function download(filename, text) {
   element.click();
 
   document.body.removeChild(element);
+}
+
+function format_date(date) {
+  // reference https://stackoverflow.com/a/3552493/10068755
+  const ye = new Intl.DateTimeFormat('en', { year: 'numeric' }).format(date);
+  const mo = new Intl.DateTimeFormat('en', { month: 'short' }).format(date);
+  const da = new Intl.DateTimeFormat('en', { day: '2-digit' }).format(date);
+  return [ye, mo, da].join("-");
 }
 
 export default App;
