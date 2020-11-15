@@ -21,3 +21,21 @@ cd api/
 python -m unittest
 ```
 
+## What's the Next Step
+
+### Algorithm
+
+- [ ] Do more optimization by taking future supply plan data into consideration
+- [ ] Try solving the optimization problem with heuristic algorithm (eg. genetic algorithm)
+- [ ] More test data and more performance evaluation metrics
+- [ ] Use specific distribution (eg. poisson distribution for generating order dates) to generate more "real" stress test data
+
+### Backend
+
+- [ ] Return the remaining order data if some orders are not fulfilled
+
+### Frontend
+
+- [ ] Display the remaining order data if some orders are not fulfilled
+- [ ] Enable drag and drop for uploading file, enable uploading multiple files at the same time
+- [ ] Provide more information if the file format is incorrect
