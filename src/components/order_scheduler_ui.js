@@ -55,7 +55,7 @@ export class OrderSchedulerUI extends React.Component {
             method: 'POST',
             body: form_data
         }).then(res => {
-            this.setState({ submitting: false }); if (res.status === 400) {
+            this.setState({ submitting: false }); if (res.status !== 200) {
                 alert("the uploaded file format is incorrect, please check the templates for reference")
             } else {
                 res.json().then(data => {
